@@ -1,4 +1,5 @@
 
+
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +30,7 @@ under the License.
 
 	<groupId>org.apache.flink</groupId>
 	<artifactId>flink-parent</artifactId>
-	<version>1.11-SNAPSHOT</version>
+	<version>1.11i.0-SNAPSHOT</version>
 
 	<name>flink</name>
 	<packaging>pom</packaging>
