@@ -48,13 +48,14 @@ import org.apache.flink.runtime.checkpoint.StandaloneCheckpointIDCounter;
 import org.apache.flink.runtime.checkpoint.StandaloneCheckpointRecoveryFactory;
 import org.apache.flink.runtime.checkpoint.StandaloneCompletedCheckpointStore;
 import org.apache.flink.runtime.checkpoint.TestingCheckpointRecoveryFactory;
-import org.apache.flink.runtime.checkpoint.savepoint.SavepointV2;
+import org.apache.flink.runtime.checkpoint.metadata.CheckpointMetadata;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.runtime.deployment.ResultPartitionDeploymentDescriptor;
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor;
+import org.apache.flink.runtime.dispatcher.SchedulerNGFactoryFactory;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.AccessExecution;
 import org.apache.flink.runtime.executiongraph.AccessExecutionVertex;
@@ -108,7 +109,6 @@ import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.runtime.rpc.TestingRpcService;
 import org.apache.flink.runtime.rpc.akka.AkkaRpcService;
 import org.apache.flink.runtime.rpc.akka.AkkaRpcServiceConfiguration;
-import org.apache.flink.runtime.scheduler.LegacySchedulerFactory;
 import org.apache.flink.runtime.scheduler.SchedulerNGFactory;
 import org.apache.flink.runtime.shuffle.NettyShuffleMaster;
 import org.apache.flink.runtime.state.CompletedCheckpointStorageLocation;
@@ -294,7 +294,8 @@ public class JobMasterTest extends TestLogger {
 			final JobManagerSharedServices jobManagerSharedServices = new TestingJobManagerSharedServicesBuilder().build();
 			final JobMasterConfiguration jobMasterConfiguration = JobMasterConfiguration.fromConfiguration(configuration);
 
-			final SchedulerNGFactory schedulerNGFactory = new LegacySchedulerFactory(
+			final SchedulerNGFactory schedulerNGFactory = SchedulerNGFactoryFactory.createSchedulerNGFactory(
+				configuration,
 				jobManagerSharedServices.getRestartStrategyFactory());
 
 			final JobMaster jobMaster = new JobMaster(
@@ -959,7 +960,8 @@ public class JobMasterTest extends TestLogger {
 			configuration,
 			jobGraph,
 			haServices,
-			new TestingJobManagerSharedServicesBuilder().build());
+			new TestingJobManagerSharedServicesBuilder().build(),
+			heartbeatServices);
 
 		final JobMasterGateway jobMasterGateway = jobMaster.getSelfGateway(JobMasterGateway.class);
 
@@ -1001,7 +1003,8 @@ public class JobMasterTest extends TestLogger {
 			configuration,
 			jobGraph,
 			haServices,
-			new TestingJobManagerSharedServicesBuilder().build());
+			new TestingJobManagerSharedServicesBuilder().build(),
+			heartbeatServices);
 
 		CompletableFuture<Acknowledge> startFuture = jobMaster.start(jobMasterId);
 
@@ -1054,6 +1057,8 @@ public class JobMasterTest extends TestLogger {
 	public void testRequestNextInputSplitWithGlobalFailover() throws Exception {
 		configuration.setInteger(RestartStrategyOptions.RESTART_STRATEGY_FIXED_DELAY_ATTEMPTS, 1);
 		configuration.set(RestartStrategyOptions.RESTART_STRATEGY_FIXED_DELAY_DELAY, Duration.ofSeconds(0));
+		configuration.setString(JobManagerOptions.EXECUTION_FAILOVER_STRATEGY, "full");
+
 
 		final Function<List<List<InputSplit>>, Collection<InputSplit>> expectAllRemainingInputSplits = this::flattenCollection;
 
@@ -1618,7 +1623,8 @@ public class JobMasterTest extends TestLogger {
 		final JobManagerSharedServices jobManagerSharedServices = new TestingJobManagerSharedServicesBuilder().build();
 		final JobMasterConfiguration jobMasterConfiguration = JobMasterConfiguration.fromConfiguration(configuration);
 
-		final SchedulerNGFactory schedulerNGFactory = new LegacySchedulerFactory(
+		final SchedulerNGFactory schedulerNGFactory = SchedulerNGFactoryFactory.createSchedulerNGFactory(
+			configuration,
 			jobManagerSharedServices.getRestartStrategyFactory());
 
 		final JobMaster jobMaster = new JobMaster(
@@ -2005,7 +2011,7 @@ public class JobMasterTest extends TestLogger {
 	private File createSavepointWithOperatorState(long savepointId, OperatorID... operatorIds) throws IOException {
 		final File savepointFile = temporaryFolder.newFile();
 		final Collection<OperatorState> operatorStates = createOperatorState(operatorIds);
-		final SavepointV2 savepoint = new SavepointV2(savepointId, operatorStates, Collections.emptyList());
+		final CheckpointMetadata savepoint = new CheckpointMetadata(savepointId, operatorStates, Collections.emptyList());
 
 		try (FileOutputStream fileOutputStream = new FileOutputStream(savepointFile)) {
 			Checkpoints.storeCheckpointMetadata(savepoint, fileOutputStream);

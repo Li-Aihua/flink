@@ -28,7 +28,7 @@ under the License.
 
 	<groupId>org.apache.flink</groupId>
 	<artifactId>flink-parent</artifactId>
-	<version>1.11.0-SNAPSHOT</version>
+	<version>1.10-SNAPSHOT</version>
 
 	<name>flink</name>
 	<packaging>pom</packaging>
@@ -70,7 +70,6 @@ under the License.
 		<module>flink-container</module>
 		<module>flink-queryable-state</module>
 		<module>flink-tests</module>
-		<module>flink-end-to-end-perf-tests</module>
 		<module>flink-end-to-end-tests</module>
 		<module>flink-test-utils-parent</module>
 		<module>flink-state-backends</module>
@@ -672,14 +671,14 @@ under the License.
 
 	<profiles>
 		<profile>
-			<id>scheduler-ng</id>
+			<id>legacy-scheduler</id>
 			<properties>
-				<test.scheduler.type>ng</test.scheduler.type>
-				<test.groups>org.apache.flink.testutils.junit.category.AlsoRunWithSchedulerNG</test.groups>
+				<test.scheduler.type>legacy</test.scheduler.type>
+				<test.groups>org.apache.flink.testutils.junit.category.AlsoRunWithLegacyScheduler</test.groups>
 			</properties>
 			<activation>
 				<property>
-					<name>scheduler-ng</name>
+					<name>legacy-scheduler</name>
 				</property>
 			</activation>
 		</profile>

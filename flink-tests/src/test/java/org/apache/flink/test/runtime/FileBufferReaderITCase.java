@@ -21,8 +21,10 @@ package org.apache.flink.test.runtime;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.client.program.MiniClusterClient;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
 import org.apache.flink.configuration.RestOptions;
+import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.io.network.api.reader.RecordReader;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
@@ -38,7 +40,7 @@ import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.runtime.minicluster.MiniCluster;
 import org.apache.flink.runtime.minicluster.MiniClusterConfiguration;
-import org.apache.flink.testutils.junit.category.AlsoRunWithSchedulerNG;
+import org.apache.flink.testutils.junit.category.AlsoRunWithLegacyScheduler;
 import org.apache.flink.testutils.serialization.types.ByteArrayType;
 import org.apache.flink.util.TestLogger;
 
@@ -65,7 +67,7 @@ import static org.junit.Assert.assertThat;
  * the first fetched buffer from {@link org.apache.flink.runtime.io.network.partition.FileChannelBoundedData} has not
  * been recycled while fetching the second buffer to trigger next read ahead, which breaks the above assumption.
  */
-@Category(AlsoRunWithSchedulerNG.class)
+@Category(AlsoRunWithLegacyScheduler.class)
 public class FileBufferReaderITCase extends TestLogger {
 
 	private static final int parallelism = 8;
@@ -86,7 +88,8 @@ public class FileBufferReaderITCase extends TestLogger {
 		// setup
 		final Configuration configuration = new Configuration();
 		configuration.setString(RestOptions.BIND_PORT, "0");
-		configuration.setString(NettyShuffleEnvironmentOptions.NETWORK_BOUNDED_BLOCKING_SUBPARTITION_TYPE, "file");
+		configuration.setString(NettyShuffleEnvironmentOptions.NETWORK_BLOCKING_SHUFFLE_TYPE, "file");
+		configuration.set(TaskManagerOptions.TOTAL_FLINK_MEMORY, MemorySize.parse("1g"));
 
 		final MiniClusterConfiguration miniClusterConfiguration = new MiniClusterConfiguration.Builder()
 			.setConfiguration(configuration)
